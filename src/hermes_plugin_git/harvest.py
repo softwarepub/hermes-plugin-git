@@ -139,3 +139,4 @@ class GitHarvestPlugin(HermesHarvestPlugin):
                                     role='git committer')
 
         return git_contributors
+        

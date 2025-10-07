@@ -86,10 +86,10 @@ class GitHarvestPlugin(HermesHarvestPlugin):
                 # Get remote url
                 remote_url = self._run_git(f"remote get-url {remote}").strip()
                 # Remove .git and convert ssh-url into http-url using this beautiful regex
-                url = url.removesuffix(".git")
-                if re.findall(r"^.+@.+\..+:.+\/.+$", url):
-                    url = re.sub(r"^.+@(.+\..+):(.+\/.+)$", r"https://\1/\2", url)
-                    git_remote_urls.append(url)
+                remote_url = remote_url.removesuffix(".git")
+                if re.findall(r"^.+@.+\..+:.+\/.+$", remote_url):
+                    remote_url = re.sub(r"^.+@(.+\..+):(.+\/.+)$", r"https://\1/\2", remote_url)
+                git_remote_urls.append(remote_url)
         except RuntimeError:
             # No Error when getting remotes fails
             pass

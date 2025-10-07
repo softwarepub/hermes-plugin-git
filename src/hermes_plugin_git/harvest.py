@@ -45,7 +45,7 @@ class GitHarvestPlugin(HermesHarvestPlugin):
         return proc.stdout
 
     def __call__(self, command: HermesHarvestCommand):
-        """Implementation of a harvester that provides autor data from Git."""
+        """Implementation of a harvester that provides author, branch & remote data from Git."""
 
         git_authors = NodeRegister(ContributorData, 'email', 'name', email=str.upper)
         git_committers = NodeRegister(ContributorData, 'email', 'name', email=str.upper)
@@ -76,9 +76,29 @@ class GitHarvestPlugin(HermesHarvestPlugin):
         git_contributors = self._merge_contributors(git_authors, git_committers)
         self._audit_contributors(git_contributors, logging.getLogger('audit.git'))
 
+        git_remotes = []
+        git_remote_urls = []
+        try:
+            # Get remotes with `git remote`
+            git_remotes = self._run_git("remote").strip().split('\n')
+            git_remotes = [remote.strip() for remote in git_remotes if remote.strip() != ""]
+            for remote in git_remotes:
+                # Get remote url
+                remote_url = self._run_git(f"remote get-url {remote}").strip()
+                # Remove .git and convert ssh-url into http-url using this beautiful regex
+                remote_url = remote_url.removesuffix(".git")
+                if re.findall(r"^.+@.+\..+:.+\/.+$", remote_url):
+                    remote_url = re.sub(r"^.+@(.+\..+):(.+\/.+)$", r"https://\1/\2", remote_url)
+                git_remote_urls.append(remote_url)
+        except RuntimeError:
+            # No Error when getting remotes fails
+            pass
+
         data = dict()
         data.update({"contributor": [contributor.to_codemeta() for contributor in git_contributors._all]})
         data.update({"hermes:gitBranch": git_branch})
+        data.update({"hermes:gitRemotes": git_remotes})
+        data.update({"hermes:gitRemoteUrls": git_remote_urls})
 
         return data, {"gitBranch": git_branch}
 
@@ -119,3 +139,4 @@ class GitHarvestPlugin(HermesHarvestPlugin):
                                     role='git committer')
 
         return git_contributors
+        
